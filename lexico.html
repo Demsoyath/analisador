@@ -37,9 +37,14 @@
       font-size: 16px;
     }
 
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
     button {
-      display: block;
-      width: 100%;
+      flex: 1;
       padding: 10px;
       background-color: cornflowerblue;
       color: white;
@@ -47,10 +52,34 @@
       border-radius: 4px;
       font-size: 16px;
       cursor: pointer;
+      transition: background-color 0.3s;
     }
 
     button:hover {
       background-color: #00628f;
+    }
+
+    .upload-button {
+      background-color: #28a745;
+    }
+
+    .upload-button:hover {
+      background-color: #1e7e34;
+    }
+
+    .drag-drop-area {
+      border: 2px dashed #ccc;
+      border-radius: 4px;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .drag-drop-area.dragover {
+      background-color: #e9ecef;
+      border-color: cornflowerblue;
+      color: cornflowerblue;
     }
 
     .output {
@@ -107,7 +136,14 @@
     <div class="caixatexto">
       <textarea id="javaInput" placeholder="Código Java..."></textarea>
     </div>
-    <button onclick="tokenizeJavaCode()">Analisar</button>
+    <div class="button-group">
+      <button onclick="tokenizeJavaCode()">Analisar</button>
+      <button class="upload-button" onclick="document.getElementById('fileInput').click()">Upload Java File</button>
+      <input type="file" id="fileInput" accept=".java" style="display: none;" onchange="handleFileUpload(event)">
+    </div>
+    <div class="drag-drop-area" id="dragDropArea">
+      Arraste e solte um arquivo Java aqui ou clique no botão "Upload Java File" para selecionar.
+    </div>
 
     <div class="output" id="output">
       <div class="output-section">
@@ -123,90 +159,147 @@
 
   <script>
 const listaDeTokens = [
-    ['KEYWORD', '\\b(?:class|public|private|protected|static|void|int|float|if|else|for|while|return)\\b'],
-    ['ID', '[A-Za-z_]\\w*'],
-    ['NUMBER', '\\d+(\\.\\d*)?'],
-    ['STRING', '\\".*?\\"'],
-    ['ASSIGN', '='],
-    ['OP', '[+\\-*/%]'],
-    ['COMPARISON', '>=|<=|!=|==|>|<'],
-    ['DOT', '\\.'],
-    ['NEWLINE', '\\n'],
-    ['SKIP', '[ \\t\\r]+'],
-    ['BLOCK', '[{}\\[\\]()]+'],
-    ['END', ';'],
-    ['COMMA', ','],
-    ['MISMATCH', '.']
+  ['COMMENT', '//.*|/\\*[\\s\\S]*?\\*/'],
+  ['KEYWORD', '\\b(?:class|public|private|protected|static|void|int|float|if|else|for|while|return)\\b'],
+  ['ID', '[A-Za-z_]\\w*'],
+  ['NUMBER', '\\d+(\\.\\d*)?'],
+  ['STRING', '\\".*?\\"'],
+  ['ASSIGN', '='],
+  ['OP', '[+\\-*/%]'],
+  ['COMPARISON', '>=|<=|!=|==|>|<'],
+  ['DOT', '\\.'],
+  ['NEWLINE', '\\n'],
+  ['SKIP', '[ \\t\\r]+'],
+  ['BLOCK', '[{}\\[\\]()]+'],
+  ['END', ';'],
+  ['COMMA', ','],
+  ['MISMATCH', '.']
 ];
 
-const tokenRe = new RegExp(listaDeTokens.map(pair => `(?<${pair[0]}>${pair[1]})`).join('|'), 'g');
+    const tokenRe = new RegExp(listaDeTokens.map(pair => `(?<${pair[0]}>${pair[1]})`).join('|'), 'g');
 
-function tokenizeJavaCode() {
-    const code = document.getElementById("javaInput").value;
-    const tokens = [];
-    
-    symbolTable = {};
-    symbolCount = 1;
-    
-    let match;
-    while ((match = tokenRe.exec(code)) !== null) {
-        const kind = Object.keys(match.groups).find(k => match.groups[k] !== undefined);
-        let value = match[0];
-        let displayKind = kind;
+    let symbolTable = {};
+    let symbolCount = 1;
 
-        if (kind === 'NUMBER') {
-            value = parseFloat(value);
-        } else if (kind === 'ID' && ['class', 'public', 'private', 'protected', 'static', 'void', 'int', 'float', 'if', 'else', 'for', 'while', 'return'].includes(value)) {
-            displayKind = 'KEYWORD';
-        } else if (kind === 'STRING') {
-            value = value.slice(1, -1);
-        } else if (kind === 'NEWLINE' || kind === 'SKIP') {
-            continue;
-        } else if (kind === 'MISMATCH') {
-            console.error(`Token invalido: ${value}`);
-            alert(`Token invalido encontrado: ${value}`);
-            throw new Error(`Token invalido: ${value}`);
-        }
+    function tokenizeJavaCode() {
+      const code = document.getElementById("javaInput").value;
+      const tokens = [];
 
-        if (kind === 'ID') {
-            if (!symbolTable[value]) {
-                symbolTable[value] = symbolCount++;
-            }
-            displayKind = `ID ${symbolTable[value]}`;
-        }
+      symbolTable = {};
+      symbolCount = 1;
 
-        tokens.push({ kind: displayKind, value });
+      let match;
+      while ((match = tokenRe.exec(code)) !== null) {
+  const kind = Object.keys(match.groups).find(k => match.groups[k] !== undefined);
+  let value = match[0];
+  let displayKind = kind;
+
+  if (kind === 'COMMENT') {
+    continue;
+  }
+
+  if (kind === 'NUMBER') {
+    value = parseFloat(value);
+  } else if (kind === 'ID' && ['class', 'public', 'private', 'protected', 'static', 'void', 'int', 'float', 'if', 'else', 'for', 'while', 'return'].includes(value)) {
+    displayKind = 'KEYWORD';
+  } else if (kind === 'STRING') {
+    value = value.slice(1, -1);
+  } else if (kind === 'NEWLINE' || kind === 'SKIP') {
+    continue;
+  } else if (kind === 'MISMATCH') {
+    console.error(`Token invalido: ${value}`);
+    alert(`Token invalido encontrado: ${value}`);
+    throw new Error(`Token invalido: ${value}`);
+  }
+
+  if (kind === 'ID') {
+    if (!symbolTable[value]) {
+      symbolTable[value] = symbolCount++;
     }
-    
-    console.log("Quantidade de tokens gerados:", tokens);
-    displayTokens(tokens);
-    displaySymbols();
+    displayKind = `ID ${symbolTable[value]}`;
+  }
+
+  tokens.push({ kind: displayKind, value });
 }
 
 
+      console.log("Quantidade de tokens gerados:", tokens);
+      displayTokens(tokens);
+      displaySymbols();
+    }
 
-function displayTokens(tokens) {
-    const tokenList = document.getElementById("tokenList");
-    tokenList.innerHTML = '';
-    tokens.forEach(token => {
+    function displayTokens(tokens) {
+      const tokenList = document.getElementById("tokenList");
+      tokenList.innerHTML = '';
+      tokens.forEach(token => {
         const tokenElement = document.createElement('div');
         tokenElement.className = 'token';
         tokenElement.textContent = `Tipo: ${token.kind}, Valor: ${token.value}`;
         tokenList.appendChild(tokenElement);
-    });
-}
+      });
+    }
 
-function displaySymbols() {
-    const symbolList = document.getElementById("symbolList");
-    symbolList.innerHTML = '';
-    
-    Object.entries(symbolTable).forEach(([id, number]) => {
+    function displaySymbols() {
+      const symbolList = document.getElementById("symbolList");
+      symbolList.innerHTML = '';
+
+      Object.entries(symbolTable).forEach(([id, number]) => {
         const symbolElement = document.createElement('div');
         symbolElement.className = 'token';
         symbolElement.textContent = `ID ${number} = ${id}`;
         symbolList.appendChild(symbolElement);
+      });
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (file && file.name.endsWith('.java')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById("javaInput").value = e.target.result;
+          tokenizeJavaCode();
+        };
+        reader.readAsText(file);
+      } else {
+        alert("Por favor, selecione um arquivo Java válido (.java).");
+      }
+      event.target.value = '';
+    }
+
+    const dragDropArea = document.getElementById('dragDropArea');
+
+    dragDropArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragDropArea.classList.add('dragover');
     });
-}
+
+    dragDropArea.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragDropArea.classList.remove('dragover');
+    });
+
+    dragDropArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragDropArea.classList.remove('dragover');
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        const file = files[0];
+        if (file.name.endsWith('.java')) {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            document.getElementById("javaInput").value = event.target.result;
+            tokenizeJavaCode();
+          };
+          reader.readAsText(file);
+        } else {
+          alert("Por favor, adicione um arquivo Java válido (.java).");
+        }
+      }
+    });
   </script>
 </body>
 </html>
