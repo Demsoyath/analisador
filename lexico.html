@@ -159,147 +159,156 @@
 
   <script>
 const listaDeTokens = [
-  ['COMMENT', '//.*|/\\*[\\s\\S]*?\\*/'],
-  ['KEYWORD', '\\b(?:class|public|private|protected|static|void|int|float|if|else|for|while|return)\\b'],
-  ['ID', '[A-Za-z_]\\w*'],
-  ['NUMBER', '\\d+(\\.\\d*)?'],
+  ['COMENTARIO', '//.*|/\\*[\\s\\S]*?\\*/'],
+  ['PALAVRA_RESERVADA', '\\b(?:class|public|private|protected|static|void|int|float|if|else|for|while|return|true|false)\\b'],
+  ['ANOTACAO', '@\\w+'],
+  ['IDENTIFICADOR', '[A-Za-z_]\\w*'],
+  ['NUMERO', '\\d+(\\.\\d*)?'],
   ['STRING', '\\".*?\\"'],
-  ['ASSIGN', '='],
-  ['OP', '[+\\-*/%]'],
-  ['COMPARISON', '>=|<=|!=|==|>|<'],
-  ['DOT', '\\.'],
-  ['NEWLINE', '\\n'],
+  ['ATRIBUICAO', '='],
+  ['OPERADOR', '[+\\-*/%]'],
+  ['COMPARACAO', '===|==|!==|!=|>=|<=|>|<'],
+  ['OPERADOR_LOGICO', '&&|\\|\\||!'],
+  ['BARRA_INVERTIDA', '\\\\'],
+  ['PONTO', '\\.'],
+  ['PONTO_DE_INTERROGACAO', '\\?'],
+  ['DOIS_PONTOS', ':'],
+  ['NOVA_LINHA', '\\n'],
   ['SKIP', '[ \\t\\r]+'],
-  ['BLOCK', '[{}\\[\\]()]+'],
-  ['END', ';'],
-  ['COMMA', ','],
-  ['MISMATCH', '.']
+  ['BLOCO', '[{}\\[\\]()]+'],
+  ['DELIMITADOR', '[;,.(){}\\[\\]]'],
+  ['PAUSE', '\\b(?:await|async|yield)\\b'],
+  ['NULL', '\\bnull\\b'],
+  ['OPERADOR_BITWISE', '&|\\||^|~']
 ];
 
-    const tokenRe = new RegExp(listaDeTokens.map(pair => `(?<${pair[0]}>${pair[1]})`).join('|'), 'g');
+const tokenRe = new RegExp(listaDeTokens.map(pair => `(?<${pair[0]}>${pair[1]})`).join('|'), 'g');
 
-    let symbolTable = {};
-    let symbolCount = 1;
+let symbolTable = {};
+let symbolCount = 1;
 
-    function tokenizeJavaCode() {
-      const code = document.getElementById("javaInput").value;
-      const tokens = [];
+function tokenizeJavaCode() {
+  const code = document.getElementById("javaInput").value;
+  const tokens = [];
 
-      symbolTable = {};
-      symbolCount = 1;
+  symbolTable = {};
+  symbolCount = 1;
 
-      let match;
-      while ((match = tokenRe.exec(code)) !== null) {
-  const kind = Object.keys(match.groups).find(k => match.groups[k] !== undefined);
-  let value = match[0];
-  let displayKind = kind;
+  let match;
+  while ((match = tokenRe.exec(code)) !== null) {
+    const kind = Object.keys(match.groups).find(k => match.groups[k] !== undefined);
+    let value = match[0];
+    let displayKind = kind;
 
-  if (kind === 'COMMENT') {
-    continue;
-  }
-
-  if (kind === 'NUMBER') {
-    value = parseFloat(value);
-  } else if (kind === 'ID' && ['class', 'public', 'private', 'protected', 'static', 'void', 'int', 'float', 'if', 'else', 'for', 'while', 'return'].includes(value)) {
-    displayKind = 'KEYWORD';
-  } else if (kind === 'STRING') {
-    value = value.slice(1, -1);
-  } else if (kind === 'NEWLINE' || kind === 'SKIP') {
-    continue;
-  } else if (kind === 'MISMATCH') {
-    console.error(`Token invalido: ${value}`);
-    alert(`Token invalido encontrado: ${value}`);
-    throw new Error(`Token invalido: ${value}`);
-  }
-
-  if (kind === 'ID') {
-    if (!symbolTable[value]) {
-      symbolTable[value] = symbolCount++;
+    if (kind === 'COMENTARIO') {
+      continue;
     }
-    displayKind = `ID ${symbolTable[value]}`;
+
+    if (kind === 'NUMERO') {
+      value = parseFloat(value);
+    } 
+    else if (kind === 'IDENTIFICADOR') {
+      if (['class', 'public', 'private', 'protected', 'static', 'void', 'int', 'float', 'if', 'else', 'for', 'while', 'return', 'true', 'false', 'null'].includes(value)) {
+        displayKind = 'PALAVRA_RESERVADA';
+      } else {
+        if (!symbolTable[value]) {
+          symbolTable[value] = symbolCount++;
+        }
+        displayKind = `IDENTIFICADOR ${symbolTable[value]}`;
+      }
+    } 
+    else if (kind === 'STRING') {
+      value = value.slice(1, -1);
+    } 
+    else if (kind === 'NOVA_LINHA' || kind === 'SKIP') {
+      continue;
+    } 
+    else if (kind === 'INVALIDO') {
+      console.error(`Token inválido: ${value}`);
+      alert(`Token inválido encontrado: ${value}`);
+      throw new Error(`Token inválido: ${value}`);
+    }
+
+    tokens.push({ kind: displayKind, value });
   }
 
-  tokens.push({ kind: displayKind, value });
+  alert(`Quantidade de tokens: ${tokens.length}`);
+  displayTokens(tokens);
+  displaySymbols();
 }
 
+function displayTokens(tokens) {
+  const tokenList = document.getElementById("tokenList");
+  tokenList.innerHTML = '';
+  tokens.forEach(token => {
+    const tokenElement = document.createElement('div');
+    tokenElement.className = 'token';
+    tokenElement.textContent = `Tipo: ${token.kind}, Valor: ${token.value}`;
+    tokenList.appendChild(tokenElement);
+  });
+}
 
-      console.log("Quantidade de tokens gerados:", tokens);
-      displayTokens(tokens);
-      displaySymbols();
+function displaySymbols() {
+  const symbolList = document.getElementById("symbolList");
+  symbolList.innerHTML = '';
+
+  Object.entries(symbolTable).forEach(([id, number]) => {
+    const symbolElement = document.createElement('div');
+    symbolElement.className = 'token';
+    symbolElement.textContent = `IDENTIFICADOR ${number} = ${id}`;
+    symbolList.appendChild(symbolElement);
+  });
+}
+
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (file && file.name.endsWith('.java')) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById("javaInput").value = e.target.result;
+      tokenizeJavaCode();
+    };
+    reader.readAsText(file);
+  } else {
+    alert("Por favor, selecione um arquivo Java válido (.java).");
+  }
+  event.target.value = '';
+}
+
+const dragDropArea = document.getElementById('dragDropArea');
+
+dragDropArea.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragDropArea.classList.add('dragover');
+});
+
+dragDropArea.addEventListener('dragleave', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragDropArea.classList.remove('dragover');
+});
+
+dragDropArea.addEventListener('drop', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragDropArea.classList.remove('dragover');
+
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    const file = files[0];
+    if (file.name.endsWith('.java')) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById("javaInput").value = e.target.result;
+        tokenizeJavaCode();
+      };
+      reader.readAsText(file);
+    } else {
+      alert("Por favor, selecione um arquivo Java válido (.java).");
     }
-
-    function displayTokens(tokens) {
-      const tokenList = document.getElementById("tokenList");
-      tokenList.innerHTML = '';
-      tokens.forEach(token => {
-        const tokenElement = document.createElement('div');
-        tokenElement.className = 'token';
-        tokenElement.textContent = `Tipo: ${token.kind}, Valor: ${token.value}`;
-        tokenList.appendChild(tokenElement);
-      });
-    }
-
-    function displaySymbols() {
-      const symbolList = document.getElementById("symbolList");
-      symbolList.innerHTML = '';
-
-      Object.entries(symbolTable).forEach(([id, number]) => {
-        const symbolElement = document.createElement('div');
-        symbolElement.className = 'token';
-        symbolElement.textContent = `ID ${number} = ${id}`;
-        symbolList.appendChild(symbolElement);
-      });
-    }
-
-    function handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (file && file.name.endsWith('.java')) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById("javaInput").value = e.target.result;
-          tokenizeJavaCode();
-        };
-        reader.readAsText(file);
-      } else {
-        alert("Por favor, selecione um arquivo Java válido (.java).");
-      }
-      event.target.value = '';
-    }
-
-    const dragDropArea = document.getElementById('dragDropArea');
-
-    dragDropArea.addEventListener('dragover', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      dragDropArea.classList.add('dragover');
-    });
-
-    dragDropArea.addEventListener('dragleave', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      dragDropArea.classList.remove('dragover');
-    });
-
-    dragDropArea.addEventListener('drop', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      dragDropArea.classList.remove('dragover');
-
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        const file = files[0];
-        if (file.name.endsWith('.java')) {
-          const reader = new FileReader();
-          reader.onload = function(event) {
-            document.getElementById("javaInput").value = event.target.result;
-            tokenizeJavaCode();
-          };
-          reader.readAsText(file);
-        } else {
-          alert("Por favor, adicione um arquivo Java válido (.java).");
-        }
-      }
-    });
+  }
+});
   </script>
 </body>
 </html>
