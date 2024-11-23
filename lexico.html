@@ -160,7 +160,7 @@
   <script>
 const listaDeTokens = [
   ['COMENTARIO', '//.*|/\\*[\\s\\S]*?\\*/'],
-  ['PALAVRA_RESERVADA', '\\b(?:class|public|private|protected|static|void|int|float|if|else|for|while|return|true|false)\\b'],
+  ['PALAVRA_RESERVADA', '\\b(?:class|synchronized|abstract|final|delete|new|null|public|private|protected|static|void|int|float|if|else|for|while|return|true|false|import|char|double|long|short|byte|boolean|throws|throw|finally|catch|try|package|super|this|interface|implements|extends|break|continue|do|default|switch|case)\\b'],
   ['ANOTACAO', '@\\w+'],
   ['IDENTIFICADOR', '[A-Za-z_]\\w*'],
   ['NUMERO', '\\d+(\\.\\d*)?'],
@@ -178,7 +178,6 @@ const listaDeTokens = [
   ['BLOCO', '[{}\\[\\]()]+'],
   ['DELIMITADOR', '[;,.(){}\\[\\]]'],
   ['PAUSE', '\\b(?:await|async|yield)\\b'],
-  ['NULL', '\\bnull\\b'],
   ['OPERADOR_BITWISE', '&|\\||^|~']
 ];
 
