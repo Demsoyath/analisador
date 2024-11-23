@@ -175,7 +175,7 @@ const listaDeTokens = [
   ['DOIS_PONTOS', ':'],
   ['NOVA_LINHA', '\\n'],
   ['SKIP', '[ \\t\\r]+'],
-  ['BLOCO', '[{}\\[\\]()]+'],
+  ['BLOCO', '[{}\\[\\]]|\\(|\\)'],
   ['DELIMITADOR', '[;,.(){}\\[\\]]'],
   ['PAUSE', '\\b(?:await|async|yield)\\b'],
   ['OPERADOR_BITWISE', '&|\\||^|~']
@@ -210,7 +210,7 @@ function tokenizeJavaCode() {
       if (['class', 'public', 'private', 'protected', 'static', 'void', 'int', 'float', 'if', 'else', 'for', 'while', 'return', 'true', 'false', 'null'].includes(value)) {
         displayKind = 'PALAVRA_RESERVADA';
       } else {
-        if (!symbolTable[value]) {
+        if (!symbolTable[value] || value === 'toString') {
           symbolTable[value] = symbolCount++;
         }
         displayKind = `IDENTIFICADOR ${symbolTable[value]}`;
@@ -235,6 +235,7 @@ function tokenizeJavaCode() {
   displayTokens(tokens);
   displaySymbols();
 }
+
 
 function displayTokens(tokens) {
   const tokenList = document.getElementById("tokenList");
