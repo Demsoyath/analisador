@@ -162,7 +162,7 @@ const listaDeTokens = [
   ['COMENTARIO', '//.*|/\\*[\\s\\S]*?\\*/'],
   ['PALAVRA_RESERVADA', '\\b(?:class|synchronized|abstract|final|delete|new|null|public|private|protected|static|void|int|float|if|else|for|while|return|true|false|import|char|double|long|short|byte|boolean|throws|throw|finally|catch|try|package|super|this|interface|implements|extends|break|continue|do|default|switch|case)\\b'],
   ['ANOTACAO', '@\\w+'],
-  ['IDENTIFICADOR', '[A-Za-z_]\\w*'],
+  ['IDENTIFICADOR', '[A-Za-z_][A-Za-z0-9_]*'],
   ['NUMERO', '\\d+(\\.\\d*)?'],
   ['STRING', '\\".*?\\"'],
   ['ATRIBUICAO', '='],
